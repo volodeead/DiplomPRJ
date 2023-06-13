@@ -1,0 +1,38 @@
+<!-- currency_app/templates/base.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Графік курсу валют</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <script src="https://code.highcharts.com/highcharts.src.js"></script>
+    <style>
+        body {
+            background-color: rgb(165, 165, 165);
+        }
+        .container {
+            background-color: rgb(214, 214, 214);
+            border-radius: 10px;
+            margin-top: 2rem;
+            padding: 2rem;
+        }
+        .sidebar {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+        }
+        .btn {
+            margin-bottom: 1rem;
+        }
+        #chart-container {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% block content %}
+    {% endblock %}
+</div>
+</body>
+</html>

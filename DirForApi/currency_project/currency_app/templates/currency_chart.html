@@ -1,0 +1,1234 @@
+<!-- currency_app/templates/currency_chart.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Main container -->
+<div class="row">
+  <!-- Sidebar -->
+  <div class="col-md-3 sidebar">
+    <!-- Currency pair buttons -->
+    <div role="group" aria-label="Currency pairs" id="currency-buttons">
+      <button type="button" class="btn btn-outline-secondary btn-block">EUR/USD</button>
+      <button type="button" class="btn btn-outline-secondary btn-block">JPY/USD</button>
+      <button type="button" class="btn btn-outline-secondary btn-block">ZLT/USD</button>
+    </div>
+  </div>
+  <!-- Main content -->
+  <div class="col-md-9">
+    <!-- Long-term/Short-term toggle -->
+    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+      <label class="btn btn-secondary active">
+        <input type="radio" name="termOptions" id="longterm" autocomplete="off" checked> Long-term
+      </label>
+      <label class="btn btn-secondary">
+        <input type="radio" name="termOptions" id="shortterm" autocomplete="off"> Short-term
+      </label>
+    </div>
+
+    <!-- Prediction method buttons and period select for long-term -->
+    <div id="longterm-container" class="mt-3">
+      <!-- Prediction method buttons -->
+      <div class="btn-group" role="group" aria-label="Long-term prediction methods">
+        <button type="button" class="btn btn-outline-secondary">ARIMA</button>
+        <button type="button" class="btn btn-outline-secondary">Prophet</button>
+      </div>
+
+      <!-- Period select -->
+      <select class="form-control mt-3" id="longterm-select">
+        <option selected>Choose...</option>
+        <option value="3days">3 Days</option>
+        <option value="1week">1 Week</option>
+        <option value="1month">1 Month</option>
+        <option value="3months">3 Months</option>
+      </select>
+    </div>
+
+    <!-- Prediction method buttons and period select for short-term -->
+    <div id="shortterm-container" class="mt-3" style="display: none;">
+      <!-- Prediction method buttons -->
+      <div class="btn-group" role="group" aria-label="Short-term prediction methods">
+        <button type="button" class="btn btn-outline-secondary">LSTM</button>
+        <button type="button" class="btn btn-outline-secondary">GRU</button>
+      </div>
+
+      <!-- Period select -->
+      <select class="form-control mt-3" id="shortterm-select">
+        <option selected>Choose...</option>
+        <option value="5min">5 Minutes</option>
+        <option value="10min">10 Minutes</option>
+        <option value="30min">30 Minutes</option>
+      </select>
+    </div>
+
+    <!-- Prediction Button -->
+    <button id="predict-btn" type="button" class="btn btn-primary mt-3">Predict</button>
+
+    <!-- Chart container -->
+    <div id="chart-container"></div>
+  </div>
+</div>
+
+<script>
+  var activePair = 'EUR/USD';
+  var chart = null;
+  var updateInterval = null;
+
+  function drawChart(method) {
+    var container = document.getElementById('chart-container');
+
+    if (chart) {
+      chart.series[1].setData([]);
+      chart.series[2].setData([]);
+      chart.series[3].setData([]);
+
+    }
+
+  if ((method == 'LSTM' && document.getElementById("shortterm-select").value == '5min')) {
+    var data = [
+          {% for obj in qs %}
+            [{{ obj.timestamp_milliseconds }}, {{ obj.exchange_rate }}],
+          {% endfor %}
+        ];
+
+  console.log(data)
+
+  if (!chart && data.length > 0) {
+    chart = Highcharts.chart(container, {
+      chart: {
+        type: 'line',
+        zoomType: 'x'
+      },
+      title: {
+        text: 'Currency Exchange Rate'
+      },
+      xAxis: {
+        type: 'datetime'
+      },
+      yAxis: {
+        title: {
+          text: 'Exchange Rate'
+        }
+      },
+      series: [{
+        name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+        data: data
+      },
+      {
+        name: 'Predictions',
+        color: 'red',
+        data: []
+      }]
+    });
+  } else if (chart) {
+    chart.series[0].setData(data);
+  }
+
+  if (updateInterval) {
+    clearInterval(updateInterval);
+  }
+
+  updateInterval = setInterval(function () {
+    fetch('{% url "latest_rate" %}')
+      .then(response => response.json())
+      .then(data => {
+        chart.series[0].addPoint([data['timestamp'], data['exchange_rate']], true, false);
+      });
+  }, 3000); // update every 30 seconds
+
+  }
+
+  if ((method == 'LSTM' && document.getElementById("shortterm-select").value == '10min')) {
+  var data = [
+        {% for obj in qs %}
+          [{{ obj.timestamp_milliseconds }}, {{ obj.exchange_rate }}],
+        {% endfor %}
+      ];
+
+  console.log(data)
+
+  if (!chart && data.length > 0) {
+    chart = Highcharts.chart(container, {
+      chart: {
+        type: 'line',
+        zoomType: 'x'
+      },
+      title: {
+        text: 'Currency Exchange Rate'
+      },
+      xAxis: {
+        type: 'datetime'
+      },
+      yAxis: {
+        title: {
+          text: 'Exchange Rate'
+        }
+      },
+      series: [{
+        name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+        data: data
+      },
+      {
+        name: 'Predictions',
+        color: 'red',
+        data: []
+      }]
+    });
+    } else if (chart) {
+      chart.series[0].setData(data);
+    }
+
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+
+    updateInterval = setInterval(function () {
+      // Fetch the latest data point and add it to the first series
+      fetch('{% url "latest_rate" %}')
+        .then(response => response.json())
+        .then(data => {
+          chart.series[0].addPoint([data['timestamp'], data['exchange_rate']], true, false);
+        });
+    }, 30000); // update every 30 seconds
+  }
+
+  if ((method == 'LSTM' && document.getElementById("shortterm-select").value == '30min')) {
+  var data = [
+        {% for obj in qs %}
+          [{{ obj.timestamp_milliseconds }}, {{ obj.exchange_rate }}],
+        {% endfor %}
+      ];
+
+  console.log(data)
+
+  if (!chart && data.length > 0) {
+    chart = Highcharts.chart(container, {
+      chart: {
+        type: 'line',
+        zoomType: 'x'
+      },
+      title: {
+        text: 'Currency Exchange Rate'
+      },
+      xAxis: {
+        type: 'datetime'
+      },
+      yAxis: {
+        title: {
+          text: 'Exchange Rate'
+        }
+      },
+      series: [{
+        name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+        data: data
+      },
+      {
+        name: 'Predictions',
+        color: 'red',
+        data: []
+      }]
+    });
+    } else if (chart) {
+      chart.series[0].setData(data);
+    }
+
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+
+    updateInterval = setInterval(function () {
+      // Fetch the latest data point and add it to the first series
+      fetch('{% url "latest_rate" %}')
+        .then(response => response.json())
+        .then(data => {
+          chart.series[0].addPoint([data['timestamp'], data['exchange_rate']], true, false);
+        });
+    }, 30000); // update every 30 seconds
+  }
+
+
+    if ((method == 'GRU' && document.getElementById("shortterm-select").value == '5min')) {
+      var data = [
+          {% for obj in qs %}
+              [{{ obj.timestamp_milliseconds }}, {{ obj.exchange_rate }}],
+          {% endfor %}
+      ];
+
+      console.log(data);
+
+      if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+              chart: {
+                  type: 'line',
+                  zoomType: 'x'
+              },
+              title: {
+                  text: 'Currency Exchange Rate'
+              },
+              xAxis: {
+                  type: 'datetime'
+              },
+              yAxis: {
+                  title: {
+                      text: 'Exchange Rate'
+                  }
+              },
+              series: [{
+                  name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+                  data: data
+              },
+              {
+                  name: 'Predictions',
+                  color: 'red',
+                  data: []
+              }]
+          });
+      } else if (chart) {
+          chart.series[0].setData(data);
+      }
+
+      if (updateInterval) {
+          clearInterval(updateInterval);
+      }
+
+      updateInterval = setInterval(function () {
+          fetch('{% url "latest_rate" %}')
+              .then(response => response.json())
+              .then(data => {
+                  chart.series[0].addPoint([data['timestamp'], data['exchange_rate']], true, false);
+              });
+      }, 30000);
+  }
+
+
+  if ((method == 'GRU' && document.getElementById("shortterm-select").value == '10min')) {
+      var data = [
+          {% for obj in qs %}
+              [{{ obj.timestamp_milliseconds }}, {{ obj.exchange_rate }}],
+          {% endfor %}
+      ];
+
+      console.log(data);
+
+      if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+              chart: {
+                  type: 'line',
+                  zoomType: 'x'
+              },
+              title: {
+                  text: 'Currency Exchange Rate'
+              },
+              xAxis: {
+                  type: 'datetime'
+              },
+              yAxis: {
+                  title: {
+                      text: 'Exchange Rate'
+                  }
+              },
+              series: [{
+                  name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+                  data: data
+              },
+              {
+                  name: 'Predictions',
+                  color: 'red',
+                  data: []
+              }]
+          });
+      } else if (chart) {
+          chart.series[0].setData(data);
+      }
+
+      if (updateInterval) {
+          clearInterval(updateInterval);
+      }
+
+      updateInterval = setInterval(function () {
+          fetch('{% url "latest_rate" %}')
+              .then(response => response.json())
+              .then(data => {
+                  chart.series[0].addPoint([data['timestamp'], data['exchange_rate']], true, false);
+              });
+      }, 30000);
+  }
+
+
+  if ((method == 'GRU' && document.getElementById("shortterm-select").value == '30min')) {
+      var data = [
+          {% for obj in qs %}
+              [{{ obj.timestamp_milliseconds }}, {{ obj.exchange_rate }}],
+          {% endfor %}
+      ];
+
+      console.log(data);
+
+      if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+              chart: {
+                  type: 'line',
+                  zoomType: 'x'
+              },
+              title: {
+                  text: 'Currency Exchange Rate'
+              },
+              xAxis: {
+                  type: 'datetime'
+              },
+              yAxis: {
+                  title: {
+                      text: 'Exchange Rate'
+                  }
+              },
+              series: [{
+                  name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+                  data: data
+              },
+              {
+                  name: 'Predictions',
+                  color: 'red',
+                  data: []
+              }]
+          });
+      } else if (chart) {
+          chart.series[0].setData(data);
+      }
+
+      if (updateInterval) {
+          clearInterval(updateInterval);
+      }
+
+      updateInterval = setInterval(function () {
+          fetch('{% url "latest_rate" %}')
+              .then(response => response.json())
+              .then(data => {
+                  chart.series[0].addPoint([data['timestamp'], data['exchange_rate']], true, false);
+              });
+      }, 30000);
+  }
+
+
+  if ((method == 'Prophet' && document.getElementById("longterm-select").value == '3days')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            },
+            {
+              name: 'Upper Bound',
+              color: 'orange',
+              data: []
+            },
+            {
+              name: 'Lower Bound',
+              color: 'green',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'Prophet' && document.getElementById("longterm-select").value == '1week')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            },
+            {
+              name: 'Upper Bound',
+              color: 'orange',
+              data: []
+            },
+            {
+              name: 'Lower Bound',
+              color: 'green',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'Prophet' && document.getElementById("longterm-select").value == '1month')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            },
+            {
+              name: 'Upper Bound',
+              color: 'orange',
+              data: []
+            },
+            {
+              name: 'Lower Bound',
+              color: 'green',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'Prophet' && document.getElementById("longterm-select").value == '3months')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            },
+            {
+              name: 'Upper Bound',
+              color: 'orange',
+              data: []
+            },
+            {
+              name: 'Lower Bound',
+              color: 'green',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'ARIMA' && document.getElementById("longterm-select").value == '1month')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+          chart.series[1]
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'ARIMA' && document.getElementById("longterm-select").value == '3months')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+          chart.series[1]
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'ARIMA' && document.getElementById("longterm-select").value == '1week')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+          chart.series[1]
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+  if ((method == 'ARIMA' && document.getElementById("longterm-select").value == '3days')) {
+    fetch('{% url "yfinance1year" %}')
+      .then(response => response.json())
+      .then(data => {
+        dataTest = JSON.parse(data)
+        console.log(dataTest);
+        var datajs = Object.entries(dataTest).map(([timestamp, rate]) => [Number(timestamp), rate]);
+        console.log(datajs);
+
+        if (!chart && data.length > 0) {
+          chart = Highcharts.chart(container, {
+            chart: {
+              type: 'line',
+              zoomType: 'x'
+            },
+            title: {
+              text: 'Currency Exchange Rate'
+            },
+            xAxis: {
+              type: 'datetime'
+            },
+            yAxis: {
+              title: {
+                text: 'Exchange Rate'
+              }
+            },
+            series: [{
+              name: '{{ qs.0.base_currency }} to {{ qs.0.target_currency }}',
+              data: datajs
+            },
+            {
+              name: 'Predictions',
+              color: 'red',
+              data: []
+            }]
+          });
+        } else if (chart) {
+          chart.series[0].setData(datajs);
+          chart.series[1]
+
+        }
+
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      })
+  }
+
+    }
+
+  // Event handlers for currency pair buttons
+  document.querySelectorAll('#currency-buttons .btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      activePair = this.innerText;
+      // Remove active class from all currency pair buttons
+      document.querySelectorAll('#currency-buttons .btn').forEach(function (btn) {
+        btn.classList.remove('active');
+      });
+      // Add active class to the clicked currency pair button
+      this.classList.add('active');
+      // Call your API to update the chart data
+    });
+  });
+
+  // Toggle display between long-term and short-term
+  document.getElementById('longterm').addEventListener('change', function () {
+    document.getElementById('longterm-container').style.display = 'block';
+    document.getElementById('shortterm-container').style.display = 'none';
+  });
+
+  document.getElementById('shortterm').addEventListener('change', function () {
+    document.getElementById('longterm-container').style.display = 'none';
+    document.getElementById('shortterm-container').style.display = 'block';
+  });
+
+  // Event handlers for prediction method buttons
+  document.querySelectorAll('.btn-group .btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      drawChart(this.innerText);
+    });
+  });
+
+  // Event handlers for prediction method buttons
+  document.querySelectorAll('.btn-group .btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      // Remove active class from all buttons in this group
+      this.parentElement.querySelectorAll('.btn').forEach(function (btn) {
+        btn.classList.remove('active');
+      });
+      // Add active class to the clicked button
+      this.classList.add('active');
+      drawChart(this.innerText);
+    });
+  });
+
+  // Event handlers for long-term/short-term toggle
+  document.querySelectorAll('.btn-group-toggle .btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      // Remove active class from all buttons in this group
+      this.parentElement.querySelectorAll('.btn').forEach(function (btn) {
+        btn.classList.remove('active');
+      });
+      // Add active class to the clicked button
+      this.classList.add('active');
+    });
+  });
+
+  document.getElementById('predict-btn').addEventListener('click', function () {
+    var term = document.querySelector('.btn-group-toggle .btn.active').innerText == 'Long-term' ? 'longterm' : 'shortterm';
+    var method = document.querySelector(`#${term}-container div[role='group'] .btn.active`).innerText;
+    var period = document.querySelector(`#${term}-select`).value;
+    var url = `/predict${period}${method}/`;
+
+     if (chart) {
+       chart.series[1].setData([]);
+       chart.series[2].setData([]);
+       chart.series[3].setData([]);
+     }
+
+    if (url == '/predict5minLSTM/') {
+      fetch(url)
+        .then(response => {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            return response.json().then(data => {
+              if (chart) {
+                var lastPoint = chart.series[0].data[chart.series[0].data.length - 1];
+                var timestamp = lastPoint ? lastPoint.x : new Date().getTime();
+                // Add the predicted point to the existing series
+                chart.series[1].addPoint([timestamp + 5 * 60 * 1000, data['next_5min_value']], true, false);
+              }
+            });
+          } else {
+            console.error("Oops, we haven't got JSON!");
+          }
+        });
+    }
+
+    if (url == '/predict10minLSTM/') {
+      // Fetch the latest predictions and add them to the second series
+      fetch('{% url "predict10minLSTM" %}')
+        .then(response => response.json())
+        .then(data => {
+          // Clear the previous predictions
+          chart.series[1].setData([]);
+
+          data['next_10min_value'].forEach(prediction => {
+            // Parse the timestamp and convert it to milliseconds
+            var timestamp = new Date(prediction['timestamp']).getTime();
+
+            chart.series[1].addPoint([timestamp, prediction['exchange_rate']], true, false);
+          });
+        });
+    }
+
+    if (url == '/predict30minLSTM/') {
+      // Fetch the latest predictions and add them to the second series
+      fetch('{% url "predict30minLSTM" %}')
+        .then(response => response.json())
+        .then(data => {
+          // Clear the previous predictions
+          chart.series[1].setData([]);
+
+          data['next_30min_value'].forEach(prediction => {
+            // Parse the timestamp and convert it to milliseconds
+            var timestamp = new Date(prediction['timestamp']).getTime();
+
+            chart.series[1].addPoint([timestamp, prediction['exchange_rate']], true, false);
+          });
+        });
+    }
+
+    if (url == '/predict5minGRU/') {
+        fetch('{% url "predict5minGRU" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (chart) {
+                    var lastPoint = chart.series[0].data[chart.series[0].data.length - 1];
+                    var timestamp = lastPoint ? lastPoint.x : new Date().getTime();
+                    // Add the predicted point to the existing series
+                    chart.series[1].addPoint([timestamp + 5 * 60 * 1000, data['next_5min_value']], true, false);
+                }
+            });
+    }
+
+    if (url == '/predict10minGRU/') {
+        fetch('{% url "predict10minGRU" %}')
+            .then(response => response.json())
+            .then(data => {
+                chart.series[1].setData([]);
+                data['next_10min_value'].forEach(prediction => {
+                    var timestamp = new Date(prediction['timestamp']).getTime();
+                    chart.series[1].addPoint([timestamp, prediction['exchange_rate']], true, false);
+                });
+            });
+    }
+
+    if (url == '/predict30minGRU/') {
+        fetch('{% url "predict30minGRU" %}')
+            .then(response => response.json())
+            .then(data => {
+                chart.series[1].setData([]);
+                data['next_30min_value'].forEach(prediction => {
+                    var timestamp = new Date(prediction['timestamp']).getTime();
+                    chart.series[1].addPoint([timestamp, prediction['exchange_rate']], true, false);
+                });
+            });
+    }
+
+    if (url == '/predict3daysProphet/') {
+    fetch(url)
+        .then(response => {
+            console.log("Prophet")
+            console.log(response);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_3days_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            // Convert date string to timestamp and multiply by 1000
+                            var timestamp = new Date(forecastList[i]['ds']).getTime();
+                            var rateUp = forecastList[i]['yhat_upper'];
+                            var rateDown = forecastList[i]['yhat_lower'];
+                            var rate = forecastList[i]['yhat'];
+                            // Add the forecasted point to the appropriate series
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                            chart.series[2].addPoint([timestamp, rateUp], true, false);
+                            chart.series[3].addPoint([timestamp, rateDown], true, false);
+
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict1weekProphet/') {
+    fetch(url)
+        .then(response => {
+            console.log("Prophet")
+            console.log(response);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_1week_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            // Convert date string to timestamp and multiply by 1000
+                            var timestamp = new Date(forecastList[i]['ds']).getTime();
+                            var rateUp = forecastList[i]['yhat_upper'];
+                            var rateDown = forecastList[i]['yhat_lower'];
+                            var rate = forecastList[i]['yhat'];
+                            // Add the forecasted point to the appropriate series
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                            chart.series[2].addPoint([timestamp, rateUp], true, false);
+                            chart.series[3].addPoint([timestamp, rateDown], true, false);
+
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict1monthProphet/') {
+    fetch(url)
+        .then(response => {
+            console.log("Prophet")
+            console.log(response);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_1month_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            // Convert date string to timestamp and multiply by 1000
+                            var timestamp = new Date(forecastList[i]['ds']).getTime();
+                            var rateUp = forecastList[i]['yhat_upper'];
+                            var rateDown = forecastList[i]['yhat_lower'];
+                            var rate = forecastList[i]['yhat'];
+                            // Add the forecasted point to the appropriate series
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                            chart.series[2].addPoint([timestamp, rateUp], true, false);
+                            chart.series[3].addPoint([timestamp, rateDown], true, false);
+
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict3monthsProphet/') {
+    fetch(url)
+        .then(response => {
+            console.log("Prophet")
+            console.log(response);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_3months_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            // Convert date string to timestamp and multiply by 1000
+                            var timestamp = new Date(forecastList[i]['ds']).getTime();
+                            var rateUp = forecastList[i]['yhat_upper'];
+                            var rateDown = forecastList[i]['yhat_lower'];
+                            var rate = forecastList[i]['yhat'];
+                            // Add the forecasted point to the appropriate series
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                            chart.series[2].addPoint([timestamp, rateUp], true, false);
+                            chart.series[3].addPoint([timestamp, rateDown], true, false);
+
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict3daysProphet/') {
+    fetch(url)
+        .then(response => {
+            console.log("Prophet")
+            console.log(response);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_3days_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            // Convert date string to timestamp and multiply by 1000
+                            var timestamp = new Date(forecastList[i]['ds']).getTime();
+                            var rateUp = forecastList[i]['yhat_upper'];
+                            var rateDown = forecastList[i]['yhat_lower'];
+                            var rate = forecastList[i]['yhat'];
+                            // Add the forecasted point to the appropriate series
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                            chart.series[2].addPoint([timestamp, rateUp], true, false);
+                            chart.series[3].addPoint([timestamp, rateDown], true, false);
+
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict1monthARIMA/') {
+    fetch(url)
+        .then(response => {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_month_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            var timestamp = forecastList[i][0] * 1000;
+                            var rate = forecastList[i][1];
+                            // Додайте прогнозовану точку до відповідної серії
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict3monthsARIMA/') {
+    fetch(url)
+        .then(response => {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_month_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            var timestamp = forecastList[i][0] * 1000;
+                            var rate = forecastList[i][1];
+                            // Додайте прогнозовану точку до відповідної серії
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict3daysARIMA/') {
+    fetch(url)
+        .then(response => {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_month_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            var timestamp = forecastList[i][0] * 1000;
+                            var rate = forecastList[i][1];
+                            // Додайте прогнозовану точку до відповідної серії
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+    if (url == '/predict1weekARIMA/') {
+    fetch(url)
+        .then(response => {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(data => {
+                    if (chart) {
+                        var forecastList = data['next_month_value'];
+                        for (var i = 0; i < forecastList.length; i++) {
+                            var timestamp = forecastList[i][0] * 1000;
+                            var rate = forecastList[i][1];
+                            // Додайте прогнозовану точку до відповідної серії
+                            chart.series[1].addPoint([timestamp, rate], true, false);
+                        }
+                    }
+                });
+            } else {
+                console.error("Oops, we haven't got JSON!");
+            }
+        });
+    }
+
+
+
+  }
+
+
+
+  );
+
+    // Initial draw of the chart
+</script>
+
+{% endblock %}
